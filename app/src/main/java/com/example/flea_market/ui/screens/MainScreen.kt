@@ -83,7 +83,7 @@ fun MainScreen(navController: NavController) {
                 "Intel Core i5 12400F LGA1700",
                 R.drawable.ic_launcher_background
             ),
-            Product(4, "35.200 ₽", "Gigabyte RTX 4060 8GB", R.drawable.ic_launcher_background)
+            Product(4, "35.290 ₽", "Gigabyte RTX 4060 8GB", R.drawable.ic_launcher_background)
         )
     }
 
