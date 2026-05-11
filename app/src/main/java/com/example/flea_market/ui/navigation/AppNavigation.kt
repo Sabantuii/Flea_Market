@@ -20,7 +20,10 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.compose.currentBackStackEntryAsState
+import com.example.flea_market.UserSession
 import com.example.flea_market.data.NotificationViewModel
+import com.example.flea_market.data.models.RegisterRequest
+import com.example.flea_market.data.models.User
 import com.example.flea_market.data.sendPushNotification
 import com.example.flea_market.ui.screens.AuthorisationScreen
 import com.example.flea_market.ui.screens.MainScreen
@@ -62,29 +65,45 @@ fun AppNavigation() {
         ) {
             composable("main") { MainScreen(navController) }
 
+            // АВТОРИЗАЦИЯ
             composable("authorisation") {
                 AuthorisationScreen(
                     onNavigateToRegistration = { navController.navigate("registration") },
-                    onLoginClick = { // ДОБАВИЛИ ЭТОТ БЛОК
-                        notificationViewModel.addNotification("Вы успешно авторизовались!")
+                    onLoginClick = { authResponse ->
+                        // 1. Сохраняем в сессию ВСЁ, что прислала база данных
+                        UserSession.currentUser = authResponse.user
 
-                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                            permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
-                        }
-                        sendPushNotification(context)
+                        // 2. Теперь в профиле БУДУТ и город, и телефон, потому что база их вернула
+                        notificationViewModel.addNotification("С возвращением, ${authResponse.user.fullName}!")
 
                         navController.navigate("main")
                     }
                 )
             }
-
+            // РЕГИСТРАЦИЯ
             composable("registration") {
                 RegistrationScreen(
                     onBackToLogin = { navController.navigate("authorisation") },
-                    onRegisterClick = {
-                        notificationViewModel.addNotification("Добро пожаловать! Регистрация прошла успешно.")
-                        // Аналогично можно добавить пуш и тут
-                        navController.navigate("main")
+                    onRegisterClick = { request -> // <-- Добавляем прием объекта запроса
+                        // 1. СОХРАНЯЕМ ДАННЫЕ В СЕССИЮ (чтобы профиль их увидел)
+                        UserSession.currentUser = User(
+                            login = request.login,
+                            fullName = request.fullName,
+                            phone = request.phone,
+                            email = request.email,
+                            city = request.city,
+                            street = request.street,
+                            house = request.house,
+                            apartment = request.apartment
+                        )
+
+                        // 2. Твои уведомления
+                        notificationViewModel.addNotification("Добро пожаловать, ${request.login}! Регистрация прошла успешно.")
+
+                        // 3. Переход на главный экран
+                        navController.navigate("main") {
+                            popUpTo("registration") { inclusive = true } // Чтобы нельзя было вернуться назад на форму
+                        }
                     }
                 )
             }
@@ -97,7 +116,7 @@ fun AppNavigation() {
             }
 
             composable("welcome") {
-                WelcomeScreen(onStartClick = { navController.navigate("authorisation") })
+                WelcomeScreen(onStartClick = { navController.navigate("registration") })
             }
 
             composable("profile") { ProfileScreen(navController) }

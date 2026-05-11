@@ -26,19 +26,27 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 // Импорты теперь тоже смотрят в com.example
 import com.example.flea_market.R
+import com.example.flea_market.data.models.AuthResponse
+import com.example.flea_market.data.models.LoginRequest
+import com.example.flea_market.data.models.RegisterRequest
+import com.example.flea_market.data.models.User
 import com.example.flea_market.ui.theme.BackgroundGray
 import com.example.flea_market.ui.theme.FleaBlue
 import com.example.flea_market.ui.theme.MarketPink
+import okhttp3.internal.userAgent
 
 @Composable
 fun AuthorisationScreen(
     onNavigateToRegistration: () -> Unit,
-    onLoginClick: () -> Unit
+    onLoginClick: (AuthResponse) -> Unit
 ) {
     var login by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
 
+    // Состояния ошибок
+    var loginError by remember { mutableStateOf<String?>(null) }
+    var passwordError by remember { mutableStateOf<String?>(null) }
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -109,7 +117,27 @@ fun AuthorisationScreen(
             Spacer(modifier = Modifier.height(40.dp))
 
             Button(
-                onClick = onLoginClick,
+                onClick = {
+                    loginError = if (login.isEmpty()) "Введите логин" else null
+                    passwordError = if (password.isEmpty()) "Введите пароль" else null
+
+                    if (loginError == null && passwordError == null) {
+                        // 1. Имитируем успешный ответ от сервера
+                        // В будущем здесь будет вызов viewModel.login(login, password)
+                        val mockResponse = AuthResponse(
+                            token = "dummy_token",
+                            user = User(
+                                login = login,
+                                fullName = "Пользователь $login",
+                                city = "Омск"
+                            )
+                        )
+
+                        // 2. ТЕПЕРЬ ТИПЫ СОВПАДАЮТ
+                        // Мы передаем AuthResponse, как и просит навигация
+                        onLoginClick(mockResponse)
+                    }
+                },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(56.dp),

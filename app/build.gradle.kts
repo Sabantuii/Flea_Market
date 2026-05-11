@@ -45,6 +45,13 @@ dependencies {
     // Навигация
     implementation("androidx.navigation:navigation-compose:2.8.0")
 
+    // Retrofit - база для работы с сетью
+    implementation("com.squareup.retrofit2:retrofit:2.9.0")
+    // Конвертер, чтобы Retrofit понимал JSON
+    implementation("com.squareup.retrofit2:converter-gson:2.9.0")
+    // Опционально: логирование запросов (помогает видеть ошибки в Logcat)
+    implementation("com.squareup.okhttp3:logging-interceptor:4.12.0")
+
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)
