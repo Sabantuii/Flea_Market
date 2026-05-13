@@ -43,7 +43,7 @@ import kotlinx.coroutines.launch
 @Composable
 fun ProfileScreen(navController: NavController) {
     // Достаем репозиторий и скоуп для запросов
-    val repository = remember { AuthRepository(RetrofitClient.api) }
+    val repository = remember { AuthRepository(RetrofitClient.instance) }
     val scope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
 
@@ -51,7 +51,7 @@ fun ProfileScreen(navController: NavController) {
     val user = UserSession.currentUser
 
     var login by remember { mutableStateOf(user?.login ?: "") }
-    var fullname by remember { mutableStateOf(user?.fullName ?: "") }
+    var fullName by remember { mutableStateOf(user?.fullName ?: "") }
     var phone by remember { mutableStateOf(user?.phone ?: "") }
     var email by remember { mutableStateOf(user?.email ?: "") }
     var password by remember { mutableStateOf(user?.password ?: "") }
@@ -82,6 +82,24 @@ fun ProfileScreen(navController: NavController) {
     var apartmentBackup by remember { mutableStateOf(user?.apartment ?: "") }
     var isEditing by remember { mutableStateOf(false) }
     var isPasswordVisible by remember { mutableStateOf(false) }
+
+    // Следим за объектом user. Как только он изменится (придет из API),
+// мы обновим локальные переменные экрана.
+    LaunchedEffect(user) {
+        user?.let {
+            login = it.login
+            password = it.password ?: ""
+            fullName = it.fullName ?: ""
+            val rawPhone = it.phone ?: ""
+            // Оставляем только цифры и берем только последние 10
+            phone = rawPhone.filter { char -> char.isDigit() }.takeLast(10)
+            email = it.email ?: ""
+            city = it.city ?: ""
+            street = it.street ?: ""
+            house = it.house ?: ""
+            apartment = it.apartment ?: ""
+        }
+    }
 
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) }
@@ -125,7 +143,7 @@ fun ProfileScreen(navController: NavController) {
                     if (!isEditing) {
                         // НАЧАЛО РЕДАКТИРОВАНИЯ: сохраняем всё в бэкап
                         loginBackup = login
-                        nameBackup = fullname
+                        nameBackup = fullName
                         phoneBackup = phone
                         emailBackup = email
                         passwordBackup = password
@@ -140,7 +158,7 @@ fun ProfileScreen(navController: NavController) {
                     } else {
                         // ОТМЕНА: возвращаем всё из бэкапа
                         login = loginBackup
-                        fullname = nameBackup
+                        fullName = nameBackup
                         phone = phoneBackup
                         email = emailBackup
                         password = passwordBackup
@@ -186,15 +204,22 @@ fun ProfileScreen(navController: NavController) {
 
                 ProfileField(
                     label = "Ваше ФИО",
-                    value = fullname,
-                    onValueChange = { fullname = it },
+                    value = fullName,
+                    onValueChange = { fullName = it },
                     enabled = isEditing
                 )
                 // ТЕЛЕФОН
                 ProfileField(
                     label = "Телефон",
                     value = phone,
-                    onValueChange = { if (it.length <= 10) phone = it; phoneError = null },
+                    onValueChange = { newValue ->
+                        // Оставляем только цифры и ограничиваем длину (10 цифр без 7/8)
+                        val digitsOnly = newValue.filter { it.isDigit() }
+                        if (digitsOnly.length <= 10) {
+                            phone = digitsOnly
+                            phoneError = null
+                        }
+                    },
                     enabled = isEditing,
                     isError = phoneError != null,
                     errorMessage = phoneError,
@@ -274,21 +299,24 @@ fun ProfileScreen(navController: NavController) {
                 if (isEditing) {
                     Button(
                         onClick = {
-                            // 2. ВАЛИДАЦИЯ ПЕРЕД ОТПРАВКОЙ
+                            // Подготовка номера добавляем 7, если её нет, и убираем лишнее
+                            val cleanPhone = phone.filter { it.isDigit() }
+                            val formattedPhone = when {
+                                cleanPhone.startsWith("8") -> "7" + cleanPhone.substring(1)
+                                cleanPhone.length == 10 -> "7" + cleanPhone
+                                else -> cleanPhone
+                            }
+
+                            // Валидация
                             loginError = if (login.length < 3) "Логин слишком короткий" else null
                             phoneError = AuthValidator.validatePhone(phone)
                             emailError = AuthValidator.validateEmail(email)
                             passwordError = AuthValidator.validatePassword(password)
 
-                            if (
-                                loginError == null &&
-                                phoneError == null &&
-                                emailError == null &&
-                                passwordError == null
-                                ) {
+                            if (loginError == null && phoneError == null &&
+                                emailError == null && passwordError == null) {
+
                                 scope.launch {
-                                    // Здесь вызываем API (пример):
-                                    // val result = repository.updateUser(...)
                                     isEditing = false
                                     snackbarHostState.showSnackbar("Данные обновлены")
                                 }
@@ -363,7 +391,7 @@ fun ProfileField(
     }
 }
 
-@Preview(device = "spec:width=411dp,height=1010dp")
+@Preview(device = "spec:width=411dp,height=1410dp")
 @Composable
 fun Show() {
     val navController = rememberNavController()

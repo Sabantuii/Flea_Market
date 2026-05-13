@@ -1,4 +1,4 @@
-package com.example.flea_market.ui.screens // Обновленный пакет
+package com.example.flea_market.ui.screens
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -30,9 +30,11 @@ import com.example.flea_market.data.models.AuthResponse
 import com.example.flea_market.data.models.LoginRequest
 import com.example.flea_market.data.models.RegisterRequest
 import com.example.flea_market.data.models.User
+import com.example.flea_market.data.network.RetrofitClient
 import com.example.flea_market.ui.theme.BackgroundGray
 import com.example.flea_market.ui.theme.FleaBlue
 import com.example.flea_market.ui.theme.MarketPink
+import kotlinx.coroutines.launch
 import okhttp3.internal.userAgent
 
 @Composable
@@ -40,6 +42,11 @@ fun AuthorisationScreen(
     onNavigateToRegistration: () -> Unit,
     onLoginClick: (AuthResponse) -> Unit
 ) {
+    // 0. Добавь эти переменные в начало AuthorisationScreen
+    val scope = rememberCoroutineScope()
+    var isLoading by remember { mutableStateOf(false) } // Чтобы показывать прогресс
+    var errorMessage by remember { mutableStateOf<String?>(null) }
+
     var login by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
@@ -115,27 +122,33 @@ fun AuthorisationScreen(
             )
 
             Spacer(modifier = Modifier.height(40.dp))
-
+            if (errorMessage != null) {
+                Text(text = errorMessage!!, color = Color.Red, modifier = Modifier.padding(8.dp))
+            }
             Button(
                 onClick = {
                     loginError = if (login.isEmpty()) "Введите логин" else null
                     passwordError = if (password.isEmpty()) "Введите пароль" else null
 
                     if (loginError == null && passwordError == null) {
-                        // 1. Имитируем успешный ответ от сервера
-                        // В будущем здесь будет вызов viewModel.login(login, password)
-                        val mockResponse = AuthResponse(
-                            token = "dummy_token",
-                            user = User(
-                                login = login,
-                                fullName = "Пользователь $login",
-                                city = "Омск"
-                            )
-                        )
+                        // ЗАПУСКАЕМ РЕАЛЬНУЮ ПРОВЕРКУ
+                        scope.launch {
+                            isLoading = true
+                            try {
+                                val response = RetrofitClient.instance.login(LoginRequest(login, password))
 
-                        // 2. ТЕПЕРЬ ТИПЫ СОВПАДАЮТ
-                        // Мы передаем AuthResponse, как и просит навигация
-                        onLoginClick(mockResponse)
+                                if (response.isSuccessful && response.body() != null) {
+                                    // Если API на ноуте сказало "ОК", вызываем переход
+                                    onLoginClick(response.body()!!)
+                                } else {
+                                    errorMessage = "Неверный логин или пароль"
+                                }
+                            } catch (e: Exception) {
+                                errorMessage = "Ошибка: ${e.localizedMessage}. Проверь IP сервера!"
+                            } finally {
+                                isLoading = false
+                            }
+                        }
                     }
                 },
                 modifier = Modifier

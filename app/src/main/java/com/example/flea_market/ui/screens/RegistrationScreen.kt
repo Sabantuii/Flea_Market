@@ -41,8 +41,8 @@ fun RegistrationScreen(
 ) {
     // Состояния для полей ввода
     var phone by remember { mutableStateOf("") }
-    var nickname by remember { mutableStateOf("") }
-    var fullname by remember { mutableStateOf("") }
+    var login by remember { mutableStateOf("") }
+    var fullName by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var repeatPassword by remember { mutableStateOf("") }
@@ -53,10 +53,18 @@ fun RegistrationScreen(
     var house by remember { mutableStateOf("") }
     var apartment by remember { mutableStateOf("") }
 
-    // Состояния ошибок
+    // Состояния ошибок (обновленный список)
     var phoneError by remember { mutableStateOf<String?>(null) }
     var emailError by remember { mutableStateOf<String?>(null) }
+    var loginError by remember { mutableStateOf<String?>(null) }
+    var fullNameError by remember { mutableStateOf<String?>(null) }
     var passwordError by remember { mutableStateOf<String?>(null) }
+
+    // Ошибки адреса
+    var cityError by remember { mutableStateOf<String?>(null) }
+    var streetError by remember { mutableStateOf<String?>(null) }
+    var houseError by remember { mutableStateOf<String?>(null) }
+    var apartmentError by remember { mutableStateOf<String?>(null) }
 
     // Состояния для видимости пароля
     var passwordVisible by remember { mutableStateOf(false) }
@@ -68,7 +76,7 @@ fun RegistrationScreen(
             .background(BackgroundGray)
             .verticalScroll(rememberScrollState())
     ) {
-        // --- ШАПКА (без изменений) ---
+        // ШАПКА
         Box(modifier = Modifier.fillMaxSize()) {
             Image(
                 painter = painterResource(id = R.drawable.bg_welcome_header),
@@ -77,15 +85,12 @@ fun RegistrationScreen(
                 modifier = Modifier.fillMaxSize()
             )
         }
-
         Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
             Text(text = "Регистрация", fontSize = 42.sp, fontWeight = FontWeight.Bold, color = Color.Black)
             Spacer(modifier = Modifier.height(24.dp))
-
             // 1. ТЕЛЕФОН С МАСКОЙ
             CustomRegistrationField(
                 value = phone,
-//                onValueChange = { if (it.length <= 10) phone = it; phoneError = null },
                 onValueChange = { newValue ->
                     // Фильтруем: оставляем только цифры и не более 10 штук
                     val digitsOnly = newValue.filter { it.isDigit() }
@@ -101,11 +106,24 @@ fun RegistrationScreen(
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
             )
             Spacer(modifier = Modifier.height(12.dp))
-
-            CustomRegistrationField(value = nickname, onValueChange = { nickname = it }, label = "Логин")
+            // Логин
+            CustomRegistrationField(
+                value = login,
+                onValueChange = { login = it; loginError = null },
+                label = "Логин",
+                isError = loginError != null,
+                errorMessage = loginError
+            )
             Spacer(modifier = Modifier.height(12.dp))
+            // ФИО
+            CustomRegistrationField(
+                value = fullName,
+                onValueChange = { fullName = it; fullNameError = null },
+                label = "ФИО",
+                isError = fullNameError != null,
+                errorMessage = fullNameError
+            )
 
-            CustomRegistrationField(value = fullname, onValueChange = { fullname = it }, label = "ФИО")
             Spacer(modifier = Modifier.height(12.dp))
 
             // 2. ПОЧТА С ВАЛИДАЦИЕЙ
@@ -118,26 +136,48 @@ fun RegistrationScreen(
             )
 
             Spacer(modifier = Modifier.height(20.dp))
-            Text(text = "Адрес доставки", fontWeight = FontWeight.Bold, color = FleaBlue)
+            Text(text = "Адрес доставки", fontWeight = FontWeight.Bold, color = FleaBlue, fontSize = 18.sp)
             Spacer(modifier = Modifier.height(8.dp))
 
             // 3. БЛОК АДРЕСА
-            CustomRegistrationField(value = city, onValueChange = { city = it }, label = "Город")
+            CustomRegistrationField(
+                value = city,
+                onValueChange = { city = it; cityError = null },
+                label = "Город",
+                isError = cityError != null,
+                errorMessage = cityError
+            )
             Spacer(modifier = Modifier.height(12.dp))
-            CustomRegistrationField(value = street, onValueChange = { street = it }, label = "Улица")
+            CustomRegistrationField(
+                value = street,
+                onValueChange = { street = it; streetError = null },
+                label = "Улица",
+                isError = streetError != null,
+                errorMessage = streetError
+            )
             Spacer(modifier = Modifier.height(12.dp))
 
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Box(modifier = Modifier.weight(1f)) {
-                    CustomRegistrationField(value = house, onValueChange = { house = it }, label = "Дом")
+                    CustomRegistrationField(
+                        value = house,
+                        onValueChange = { house = it; houseError = null },
+                        label = "Дом",
+                        isError = houseError != null,
+                        errorMessage = houseError
+                    )
                 }
                 Box(modifier = Modifier.weight(1f)) {
-                    CustomRegistrationField(value = apartment, onValueChange = { apartment = it }, label = "Кв.")
+                    CustomRegistrationField(
+                        value = apartment,
+                        onValueChange = { apartment = it; apartmentError = null },
+                        label = "Кв.",
+                        isError = apartmentError != null,
+                        errorMessage = apartmentError
+                    )
                 }
             }
-
             Spacer(modifier = Modifier.height(20.dp))
-
             // 4. ПАРОЛИ
             CustomRegistrationField(
                 value = password,
@@ -165,22 +205,47 @@ fun RegistrationScreen(
             // Кнопка Регистрация
             Button(
                 onClick = {
-                    // ПРОВЕРКА ПЕРЕД ОТПРАВКОЙ
+                    // Подготавливаем "чистый" номер для БД
+                    val cleanPhone = phone.filter { it.isDigit() }
+                    val formattedPhone = when {
+                        cleanPhone.startsWith("8") -> "7" + cleanPhone.substring(1)
+                        cleanPhone.length == 10 -> "7" + cleanPhone
+                        cleanPhone.startsWith("7") -> cleanPhone
+                        else -> cleanPhone
+                    }
+                    // 1. ПРОВЕРКА ВСЕХ ПОЛЕЙ
                     phoneError = AuthValidator.validatePhone(phone)
                     emailError = AuthValidator.validateEmail(email)
-                    passwordError = AuthValidator.validatePasswordsMatch(password, repeatPassword)
+                    loginError = AuthValidator.validateMinLength(login, "Логин")
+                    fullNameError = AuthValidator.validateMinLength(fullName, "ФИО")
 
-                    if (phoneError == null && emailError == null && passwordError == null) {
+                    // Валидация паролей
+                    val matchError = AuthValidator.validatePasswordsMatch(password, repeatPassword)
+                    val strengthError = AuthValidator.validatePassword(password)
+                    passwordError = matchError ?: strengthError
+
+                    // Валидация адреса
+                    cityError = AuthValidator.validateNotEmpty(city, "Город")
+                    streetError = AuthValidator.validateNotEmpty(street, "Улица")
+                    houseError = AuthValidator.validateNotEmpty(house, "Дом")
+
+                    // 2. ЕСЛИ ОШИБОК НЕТ - ОТПРАВЛЯЕМ
+                    val isValid = phoneError == null && emailError == null &&
+                            loginError == null && fullNameError == null &&
+                            passwordError == null && cityError == null &&
+                            streetError == null && houseError == null
+
+                    if (isValid) {
                         val request = RegisterRequest(
-                            login = nickname,
+                            login = login.trim(),
                             password = password,
-                            fullName = fullname,
-                            email = email,
+                            fullName = fullName.trim(),
+                            email = email.trim(),
                             phone = phone,
-                            city = city,
-                            street = street,
-                            house = house,
-                            apartment = apartment
+                            city = city.trim(),
+                            street = street.trim(),
+                            house = house.trim(),
+                            apartment = apartment.trim()
                         )
                         onRegisterClick(request)
                     }
@@ -220,7 +285,6 @@ fun CustomRegistrationField(
     isPassword: Boolean = false,
     isPasswordVisible: Boolean = false,
     onPasswordToggle: (() -> Unit)? = null,
-    // НОВЫЕ ПАРАМЕТРЫ ДЛЯ ВАЛИДАЦИИ И МАСОК:
     isError: Boolean = false,
     errorMessage: String? = null,
     visualTransformation: VisualTransformation = VisualTransformation.None,
@@ -287,7 +351,6 @@ fun CustomRegistrationField(
                 }
             }
         )
-
         // ВЫВОД ТЕКСТА ОШИБКИ ПОД ПОЛЕМ
         if (isError && errorMessage != null) {
             Text(
@@ -299,7 +362,7 @@ fun CustomRegistrationField(
         }
     }
 }
-@Preview(showBackground = true, device = "spec:width=411dp,height=1100dp")
+@Preview(showBackground = true, device = "spec:width=411dp,height=1350dp")
 @Composable
 fun RegistrationScreenPreview() {
     RegistrationScreen({}, {})

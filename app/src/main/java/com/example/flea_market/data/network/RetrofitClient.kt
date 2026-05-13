@@ -7,7 +7,7 @@ object RetrofitClient {
     // 10.0.2.2 — это адрес твоего компа для эмулятора Android
     private const val BASE_URL = "http://10.0.2.2:5170/"
 
-    val api: FleaMarketApi by lazy {
+    val instance: FleaMarketApi by lazy {
         Retrofit.Builder()
             .baseUrl(BASE_URL)
             .addConverterFactory(GsonConverterFactory.create())

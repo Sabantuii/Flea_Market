@@ -70,14 +70,10 @@ fun AppNavigation() {
                 AuthorisationScreen(
                     onNavigateToRegistration = { navController.navigate("registration") },
                     onLoginClick = { authResponse ->
-                        // 1. Сохраняем в сессию ВСЁ, что прислала база данных
                         UserSession.currentUser = authResponse.user
 
-                        // 2. Теперь в профиле БУДУТ и город, и телефон, потому что база их вернула
-                        notificationViewModel.addNotification("С возвращением, ${authResponse.user.fullName}!")
-
                         navController.navigate("main")
-                    }
+                        }
                 )
             }
             // РЕГИСТРАЦИЯ
@@ -88,6 +84,7 @@ fun AppNavigation() {
                         // 1. СОХРАНЯЕМ ДАННЫЕ В СЕССИЮ (чтобы профиль их увидел)
                         UserSession.currentUser = User(
                             login = request.login,
+                            password = request.password,
                             fullName = request.fullName,
                             phone = request.phone,
                             email = request.email,
@@ -116,7 +113,7 @@ fun AppNavigation() {
             }
 
             composable("welcome") {
-                WelcomeScreen(onStartClick = { navController.navigate("registration") })
+                WelcomeScreen(onStartClick = { navController.navigate("authorisation") })
             }
 
             composable("profile") { ProfileScreen(navController) }

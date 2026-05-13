@@ -7,5 +7,5 @@ import com.example.flea_market.data.models.User
 //    var currentUser: RegisterRequest? = null
 //}
 object UserSession {
-    var currentUser: User? = null // Теперь тут хранится универсальный объект User
+    var currentUser: User? = null // тут хранится универсальный объект User
 }
