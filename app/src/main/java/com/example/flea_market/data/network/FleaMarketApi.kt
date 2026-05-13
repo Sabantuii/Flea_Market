@@ -17,7 +17,6 @@ interface FleaMarketApi {
     @POST("api/Auth/register")
     suspend fun register(@Body request: RegisterRequest): Response<User>
 
-    // ДОБАВЬ ЭТО:
     @GET("api/Products")
     suspend fun getProducts(): Response<List<Product>>
 }

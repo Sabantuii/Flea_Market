@@ -1,6 +1,5 @@
 package com.example.flea_market.ui.screens
 
-import android.R.attr.padding
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -14,9 +13,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.PlatformTextStyle
 import androidx.compose.ui.text.TextStyle
@@ -24,22 +21,23 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
-import androidx.navigation.compose.NavHost
-import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.flea_market.R
 import com.example.flea_market.data.Product
 import com.example.flea_market.data.ProductCard
 import com.example.flea_market.data.network.RetrofitClient
-import com.example.flea_market.ui.navigation.FleaBottomNavigation
 import com.example.flea_market.ui.theme.FleaBlue
 import com.example.flea_market.ui.theme.MarketPink
+import com.example.flea_market.viewmodels.BasketViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MainScreen(navController: NavController) {
-
+fun MainScreen(
+    navController: NavController,
+    basketViewModel: BasketViewModel
+    ) {
     // Состояния для поиска
     var searchText by remember { mutableStateOf("") }
     var isSearchActive by remember { mutableStateOf(false) }
@@ -174,7 +172,11 @@ fun MainScreen(navController: NavController) {
                 modifier = Modifier.fillMaxSize()
             ) {
                 items(products) { product ->
-                    ProductCard(product)
+                    ProductCard(
+                        product = product,
+                        isInBasket = basketViewModel.basketItems.any { it.id == product.id }, // Проверяем через вьюмодель
+                        onBasketClick = { basketViewModel.toggleProduct(product) } // Добавляем/удаляем
+                    )
                 }
             }
         }
@@ -186,5 +188,6 @@ fun MainScreen(navController: NavController) {
 @Composable
 fun MainScreenPreview() {
     val navController = rememberNavController()
-    MainScreen(navController)
+    val basketViewModel: BasketViewModel = viewModel()
+    MainScreen(navController, basketViewModel)
 }

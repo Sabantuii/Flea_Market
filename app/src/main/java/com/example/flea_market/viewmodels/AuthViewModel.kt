@@ -1,4 +1,4 @@
-package com.example.flea_market.ui
+package com.example.flea_market.viewmodels
 
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel

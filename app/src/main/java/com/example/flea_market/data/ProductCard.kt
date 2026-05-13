@@ -32,53 +32,40 @@ import com.example.flea_market.ui.theme.FleaBlue
 import com.example.flea_market.ui.theme.MarketPink
 
 @Composable
-fun ProductCard(product: Product) {
+fun ProductCard(
+    product: Product,
+    isInBasket: Boolean, // Передаем состояние
+    onBasketClick: () -> Unit // Действие при нажатии
+) {
+    val buttonColor = if (isInBasket) Color(0xFF8BB5FF) else FleaBlue
+    val buttonText = if (isInBasket) "В КОРЗИНЕ" else "В КОРЗИНУ"
+
     Card(
-        modifier = Modifier.size(width = 156.dp, height = 230.dp), // Чуть увеличил высоту под текст
+        modifier = Modifier.fillMaxWidth().height(230.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
         shape = RoundedCornerShape(8.dp),
         elevation = CardDefaults.cardElevation(2.dp)
     ) {
         Column(modifier = Modifier.fillMaxSize()) {
-            // ФОТО ИЗ СЕТИ
             AsyncImage(
                 model = product.imageUrl,
-                contentDescription = product.name,
+                contentDescription = null,
                 contentScale = ContentScale.Fit,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(110.dp) // Немного увеличил область фото
-                    .background(Color.White),
-                placeholder = painterResource(R.drawable.ic_launcher_background), // Пока грузится
-                error = painterResource(R.drawable.ic_launcher_background) // Если ошибка
+                modifier = Modifier.fillMaxWidth().height(110.dp)
             )
 
             Column(modifier = Modifier.padding(8.dp)) {
-                Text(
-                    text = "${product.price} ₽", // Форматируем цену
-                    color = MarketPink,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 15.sp
-                )
-                Text(
-                    text = product.name,
-                    fontSize = 12.sp,
-                    maxLines = 2, // Ограничим, чтобы верстка не ехала
-                    modifier = Modifier.padding(top = 4.dp).height(32.dp)
-                )
-
-                Spacer(modifier = Modifier.height(8.dp))
+                Text("${product.price} ₽", color = MarketPink, fontWeight = FontWeight.Bold)
+                Text(product.name, fontSize = 12.sp, maxLines = 2, modifier = Modifier.weight(1f))
 
                 Button(
-                    onClick = { /* TODO */ },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(30.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = FleaBlue),
+                    onClick = { onBasketClick() },
+                    modifier = Modifier.fillMaxWidth().height(32.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = buttonColor),
                     contentPadding = PaddingValues(0.dp),
                     shape = RoundedCornerShape(8.dp)
                 ) {
-                    Text("В КОРЗИНУ", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                    Text(buttonText, fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color.White)
                 }
             }
         }
@@ -93,5 +80,5 @@ fun PreviewProductCard() {
         "Intel",
         1999.00,
         "https://ya.ru/images/search?text=кулер&pos=1&rpt=simage&img_url=https%3A%2F%2Favatars.mds.yandex.net%2Fget-mpic%2F12018251%2F2a000001993d179ea6d0230473f14f52917d%2Forig&from=tabbar&lr=66"
-    ))
+    ), isInBasket = false, {})
 }

@@ -26,15 +26,20 @@ import com.example.flea_market.data.models.RegisterRequest
 import com.example.flea_market.data.models.User
 import com.example.flea_market.data.sendPushNotification
 import com.example.flea_market.ui.screens.AuthorisationScreen
+import com.example.flea_market.ui.screens.BasketScreen
 import com.example.flea_market.ui.screens.MainScreen
 import com.example.flea_market.ui.screens.NotificationScreen
 import com.example.flea_market.ui.screens.ProfileScreen
 import com.example.flea_market.ui.screens.RegistrationScreen
 import com.example.flea_market.ui.screens.WelcomeScreen
+import com.example.flea_market.viewmodels.BasketViewModel
 import kotlinx.coroutines.launch
 
 @Composable
 fun AppNavigation() {
+
+    val basketViewModel: BasketViewModel = viewModel()
+
     val context = androidx.compose.ui.platform.LocalContext.current // ДОБАВИЛИ
     val navController = rememberNavController()
     val notificationViewModel: NotificationViewModel = viewModel()
@@ -63,7 +68,7 @@ fun AppNavigation() {
             startDestination = "welcome",
             modifier = Modifier.padding(paddingValues)
         ) {
-            composable("main") { MainScreen(navController) }
+            composable("main") { MainScreen(navController, basketViewModel) }
 
             // АВТОРИЗАЦИЯ
             composable("authorisation") {
@@ -117,6 +122,12 @@ fun AppNavigation() {
             }
 
             composable("profile") { ProfileScreen(navController) }
+
+            // ЭКРАН КОРЗИНЫ
+            composable("basket") {
+
+                BasketScreen(navController, basketViewModel)
+            }
         }
     }
 }

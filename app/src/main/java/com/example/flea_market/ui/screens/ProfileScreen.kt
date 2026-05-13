@@ -30,6 +30,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.*
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import com.example.flea_market.UserSession
@@ -37,11 +39,13 @@ import com.example.flea_market.data.network.RetrofitClient
 import com.example.flea_market.data.repository.AuthRepository
 import com.example.flea_market.utils.AuthValidator
 import com.example.flea_market.utils.PhoneVisualTransformation
+import com.example.flea_market.viewmodels.BasketViewModel
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProfileScreen(navController: NavController) {
+    val basketViewModel: BasketViewModel = viewModel()
     // Достаем репозиторий и скоуп для запросов
     val repository = remember { AuthRepository(RetrofitClient.instance) }
     val scope = rememberCoroutineScope()
@@ -335,6 +339,9 @@ fun ProfileScreen(navController: NavController) {
                 // КНОПКА ВЫХОД
                 OutlinedButton(
                     onClick = {
+
+                        basketViewModel.clearBasket()
+
                         UserSession.currentUser = null
                         navController.navigate("authorisation") { popUpTo(0) }
                     },

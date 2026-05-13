@@ -33,5 +33,5 @@ data class LoginRequest(
 
 data class AuthResponse(
     val token: String, // Ключ для доступа к другим функциям
-    val user: User // Тот самый универсальный класс пользователя со всеми полями
+    val user: User // универсальный класс пользователя со всеми полями
 )
