@@ -40,6 +40,7 @@ android {
 }
 
 dependencies {
+    implementation("io.coil-kt:coil-compose:2.5.0")
     // Иконки глаза
     implementation("androidx.compose.material:material-icons-extended")
     // Навигация

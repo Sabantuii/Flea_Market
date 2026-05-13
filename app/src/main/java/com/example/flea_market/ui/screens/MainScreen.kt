@@ -31,6 +31,7 @@ import androidx.navigation.compose.rememberNavController
 import com.example.flea_market.R
 import com.example.flea_market.data.Product
 import com.example.flea_market.data.ProductCard
+import com.example.flea_market.data.network.RetrofitClient
 import com.example.flea_market.ui.navigation.FleaBottomNavigation
 import com.example.flea_market.ui.theme.FleaBlue
 import com.example.flea_market.ui.theme.MarketPink
@@ -39,52 +40,30 @@ import com.example.flea_market.ui.theme.MarketPink
 @Composable
 fun MainScreen(navController: NavController) {
 
-// Состояния для поиска
+    // Состояния для поиска
     var searchText by remember { mutableStateOf("") }
     var isSearchActive by remember { mutableStateOf(false) }
     var selectedTab by remember { mutableStateOf("home") }
 
-    val products = remember {
-        listOf(
-            Product(
-                1,
-                "12.990 ₽",
-                "Kingston Fury DDR5 32GB 6000MHz",
-                R.drawable.culer
-            ),
-            Product(2, "61.430 ₽", "MSI SPATIUM M.2 SSD 2TB", R.drawable.ic_launcher_background),
-            Product(
-                3,
-                "17.930 ₽",
-                "Intel Core i5 12400F LGA1700",
-                R.drawable.ic_launcher_background
-            ),
-            Product(
-                3,
-                "17.930 ₽",
-                "Intel Core i5 12400F LGA1700",
-                R.drawable.ic_launcher_background
-            ),
-            Product(
-                3,
-                "17.930 ₽",
-                "Intel Core i5 12400F LGA1700",
-                R.drawable.ic_launcher_background
-            ),
-            Product(
-                3,
-                "17.930 ₽",
-                "Intel Core i5 12400F LGA1700",
-                R.drawable.ic_launcher_background
-            ),
-            Product(
-                3,
-                "17.930 ₽",
-                "Intel Core i5 12400F LGA1700",
-                R.drawable.ic_launcher_background
-            ),
-            Product(4, "35.290 ₽", "Gigabyte RTX 4060 8GB", R.drawable.ic_launcher_background)
-        )
+    var products by remember { mutableStateOf<List<Product>>(emptyList()) }
+    var isLoading by remember { mutableStateOf(true) }
+    val scope = rememberCoroutineScope()
+
+    // Загружаем данные при входе на экран
+    val context = androidx.compose.ui.platform.LocalContext.current
+    LaunchedEffect(Unit) {
+        try {
+            val response = RetrofitClient.instance.getProducts()
+            if (response.isSuccessful) {
+                products = response.body() ?: emptyList()
+            }
+        } catch (e: Exception) {
+            // Если вообще нет связи с сервером или упал интернет
+            android.util.Log.e("API_DEBUG", "Сбой сети: ${e.message}")
+            android.widget.Toast.makeText(context, "Проверь подключение к интернету", android.widget.Toast.LENGTH_LONG).show()
+        } finally {
+            isLoading = false
+        }
     }
 
     Column(
@@ -182,18 +161,21 @@ fun MainScreen(navController: NavController) {
                 }
             }
         }
-
-        // --- СЕТКА ТОВАРОВ ---
-        LazyVerticalGrid(
-            columns = GridCells.Fixed(2),
-            contentPadding = PaddingValues(16.dp),
-            horizontalArrangement = Arrangement.spacedBy(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
-            modifier = Modifier
-                .fillMaxSize()
-        ) {
-            items(products) { product ->
-                ProductCard(product)
+        if (isLoading) {
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator(color = FleaBlue)
+            }
+        } else {
+            LazyVerticalGrid(
+                columns = GridCells.Fixed(2),
+                contentPadding = PaddingValues(16.dp),
+                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+                modifier = Modifier.fillMaxSize()
+            ) {
+                items(products) { product ->
+                    ProductCard(product)
+                }
             }
         }
     }

@@ -1,6 +1,7 @@
 package com.example.flea_market.data
 
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
@@ -25,6 +26,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil.compose.AsyncImage
 import com.example.flea_market.R
 import com.example.flea_market.ui.theme.FleaBlue
 import com.example.flea_market.ui.theme.MarketPink
@@ -32,43 +34,46 @@ import com.example.flea_market.ui.theme.MarketPink
 @Composable
 fun ProductCard(product: Product) {
     Card(
-        modifier = Modifier
-            .size(width = 156.dp, height = 215.dp),
+        modifier = Modifier.size(width = 156.dp, height = 230.dp), // Чуть увеличил высоту под текст
         colors = CardDefaults.cardColors(containerColor = Color.White),
         shape = RoundedCornerShape(8.dp),
         elevation = CardDefaults.cardElevation(2.dp)
     ) {
         Column(modifier = Modifier.fillMaxSize()) {
-            // Фото товара (156 на 90, Crop)
-            Image(
-                painter = painterResource(id = product.imageRes),
-                contentDescription = null,
+            // ФОТО ИЗ СЕТИ
+            AsyncImage(
+                model = product.imageUrl,
+                contentDescription = product.name,
                 contentScale = ContentScale.Fit,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(90.dp)
+                    .height(110.dp) // Немного увеличил область фото
+                    .background(Color.White),
+                placeholder = painterResource(R.drawable.ic_launcher_background), // Пока грузится
+                error = painterResource(R.drawable.ic_launcher_background) // Если ошибка
             )
 
             Column(modifier = Modifier.padding(8.dp)) {
                 Text(
-                    text = product.price,
+                    text = "${product.price} ₽", // Форматируем цену
                     color = MarketPink,
                     fontWeight = FontWeight.Bold,
-                    fontSize = 14.sp
+                    fontSize = 15.sp
                 )
                 Text(
-                    text = product.desc,
+                    text = product.name,
                     fontSize = 12.sp,
-                    modifier = Modifier.padding(top = 4.dp).weight(3f)
+                    maxLines = 2, // Ограничим, чтобы верстка не ехала
+                    modifier = Modifier.padding(top = 4.dp).height(32.dp)
                 )
-                // Кнопка (высота 26, жирный текст по центру)
+
+                Spacer(modifier = Modifier.height(8.dp))
+
                 Button(
                     onClick = { /* TODO */ },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(26.dp)
-                        .weight(1f)
-                        .padding(bottom = 2.dp),
+                        .height(30.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = FleaBlue),
                     contentPadding = PaddingValues(0.dp),
                     shape = RoundedCornerShape(8.dp)
@@ -83,11 +88,10 @@ fun ProductCard(product: Product) {
 @Composable
 fun PreviewProductCard() {
 
-    val product = Product(
-        1,
-        "12.990 ₽",
-        "Kingston Fury DDR5 32GB 6000MHz",
-        R.drawable.ram
-    )
-    ProductCard(product)
+    ProductCard(Product(
+        "1",
+        "Intel",
+        1999.00,
+        "https://ya.ru/images/search?text=кулер&pos=1&rpt=simage&img_url=https%3A%2F%2Favatars.mds.yandex.net%2Fget-mpic%2F12018251%2F2a000001993d179ea6d0230473f14f52917d%2Forig&from=tabbar&lr=66"
+    ))
 }
