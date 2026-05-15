@@ -241,7 +241,7 @@ fun RegistrationScreen(
                             password = password,
                             fullName = fullName.trim(),
                             email = email.trim(),
-                            phone = phone,
+                            phone = formattedPhone,
                             city = city.trim(),
                             street = street.trim(),
                             house = house.trim(),

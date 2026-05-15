@@ -1,5 +1,6 @@
 package com.example.flea_market.viewmodels
 
+import android.util.Log
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -17,12 +18,16 @@ class AuthViewModel(private val repository: AuthRepository) : ViewModel() {
     var isSuccess = mutableStateOf(false)
 
     fun register(data: RegisterRequest, confirmPass: String) {
-        // 1. Сначала валидация
+        Log.d("DEBUG_REG", "Функция register вызвана")
+
         val validationError = repository.validateRegistration(data, confirmPass)
         if (validationError != null) {
+            Log.e("DEBUG_REG", "Валидация во ViewModel НЕ ПРОШЛА: $validationError")
             errorMessage.value = validationError
             return
         }
+
+        Log.d("DEBUG_REG", "Заходим в корутину для отправки...")
 
         // 2. Если всё ок, шлем запрос
         viewModelScope.launch {

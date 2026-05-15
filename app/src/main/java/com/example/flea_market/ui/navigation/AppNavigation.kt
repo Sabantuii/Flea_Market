@@ -9,11 +9,14 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 // ВАЖНО: Импортируй именно из .compose пакета!
 import androidx.navigation.compose.NavHost
@@ -24,6 +27,8 @@ import com.example.flea_market.UserSession
 import com.example.flea_market.data.NotificationViewModel
 import com.example.flea_market.data.models.RegisterRequest
 import com.example.flea_market.data.models.User
+import com.example.flea_market.data.network.RetrofitClient
+import com.example.flea_market.data.repository.AuthRepository
 import com.example.flea_market.data.sendPushNotification
 import com.example.flea_market.ui.screens.AuthorisationScreen
 import com.example.flea_market.ui.screens.BasketScreen
@@ -32,11 +37,23 @@ import com.example.flea_market.ui.screens.NotificationScreen
 import com.example.flea_market.ui.screens.ProfileScreen
 import com.example.flea_market.ui.screens.RegistrationScreen
 import com.example.flea_market.ui.screens.WelcomeScreen
+import com.example.flea_market.viewmodels.AuthViewModel
 import com.example.flea_market.viewmodels.BasketViewModel
 import kotlinx.coroutines.launch
 
 @Composable
 fun AppNavigation() {
+    // 1. Сначала исправляем создание репозитория.
+// Ему нужно передать наш Retrofit-клиент (instance)
+    val repository = AuthRepository(api = RetrofitClient.instance)
+
+// 2. Создаем ViewModel через Factory.
+// Убедись, что AuthViewModelFactory у тебя выглядит примерно так:
+    val authViewModel: AuthViewModel = viewModel(factory = object : ViewModelProvider.Factory {
+        override fun <T : ViewModel> create(modelClass: Class<T>): T {
+            return AuthViewModel(repository) as T
+        }
+    })
 
     val basketViewModel: BasketViewModel = viewModel()
 
@@ -55,17 +72,14 @@ fun AppNavigation() {
     val currentRoute = navBackStackEntry?.destination?.route
     val showBottomBar = currentRoute in listOf("main", "catalog", "orders", "basket", "profile")
 
-    Scaffold(
-        snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
-        bottomBar = {
-            if (showBottomBar) {
-                FleaBottomNavigation(navController = navController)
-            }
+    Scaffold(snackbarHost = { SnackbarHost(hostState = snackbarHostState) }, bottomBar = {
+        if (showBottomBar) {
+            FleaBottomNavigation(navController = navController)
         }
-    ) { paddingValues ->
+    }) { paddingValues ->
         NavHost(
             navController = navController,
-            startDestination = "basket",
+            startDestination = "welcome",
             modifier = Modifier.padding(paddingValues)
         ) {
             composable("main") { MainScreen(navController, basketViewModel) }
@@ -78,15 +92,14 @@ fun AppNavigation() {
                         UserSession.currentUser = authResponse.user
 
                         navController.navigate("main")
-                        }
-                )
+                    })
             }
             // РЕГИСТРАЦИЯ
             composable("registration") {
                 RegistrationScreen(
                     onBackToLogin = { navController.navigate("authorisation") },
-                    onRegisterClick = { request -> // <-- Добавляем прием объекта запроса
-                        // 1. СОХРАНЯЕМ ДАННЫЕ В СЕССИЮ (чтобы профиль их увидел)
+                    onRegisterClick = { request ->
+                        // 1. Сразу сохраняем данные в сессию, чтобы они были доступны в профиле
                         UserSession.currentUser = User(
                             login = request.login,
                             password = request.password,
@@ -99,21 +112,37 @@ fun AppNavigation() {
                             apartment = request.apartment
                         )
 
-                        // 2. Твои уведомления
-                        notificationViewModel.addNotification("Добро пожаловать, ${request.login}! Регистрация прошла успешно.")
-
-                        // 3. Переход на главный экран
-                        navController.navigate("main") {
-                            popUpTo("registration") { inclusive = true } // Чтобы нельзя было вернуться назад на форму
-                        }
+                        // 2. Вызываем реальный запрос на сервер через ViewModel
+                        println("!!! Вызываем регистрацию на сервере для: ${request.login}")
+                        authViewModel.register(request, request.password)
                     }
                 )
+
+                // Следим за состоянием из ViewModel
+                val isSuccess by authViewModel.isSuccess
+                val error by authViewModel.errorMessage
+
+                // Если сервер ответил "Успех" — летим на главный экран
+                LaunchedEffect(isSuccess) {
+                    if (isSuccess) {
+                        notificationViewModel.addNotification("Регистрация на сервере прошла успешно!")
+                        navController.navigate("main") {
+                            popUpTo("registration") { inclusive = true }
+                        }
+                    }
+                }
+
+                // Если сервер ругнулся — выводим это в логи (или можно добавить Snackbar)
+                LaunchedEffect(error) {
+                    if (error != null) {
+                        println("!!! Ошибка регистрации на бэкенде: $error")
+                    }
+                }
             }
 
             composable("notifications") {
                 NotificationScreen(
-                    navController = navController,
-                    messages = notificationViewModel.notifications
+                    navController = navController, messages = notificationViewModel.notifications
                 )
             }
 
