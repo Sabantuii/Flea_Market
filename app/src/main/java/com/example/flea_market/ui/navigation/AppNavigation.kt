@@ -65,7 +65,7 @@ fun AppNavigation() {
     ) { paddingValues ->
         NavHost(
             navController = navController,
-            startDestination = "welcome",
+            startDestination = "basket",
             modifier = Modifier.padding(paddingValues)
         ) {
             composable("main") { MainScreen(navController, basketViewModel) }
